@@ -25,11 +25,6 @@ namespace CookiesOpml.Pages
         public int TotalItemCount { get; set; }
         public List<RssModelClass> RssListStarred { get; set; } = new();
         public List<RssModelClass> RssListGlobal { get; set; } = new();
-
-
-
-
-
         public async Task<IActionResult> OnGetAsync(int? page)
         {
         
@@ -45,17 +40,12 @@ namespace CookiesOpml.Pages
 
                 foreach (var item in rss.Items)
                 {
-                    var uri = new Uri(item.Guid);
-                    var itemNumber = HttpUtility.ParseQueryString(uri.Query).Get("item");
-
-                    if (!string.IsNullOrEmpty(itemNumber) && likedItemGuids.Contains(itemNumber))
+                    if (!string.IsNullOrEmpty(item.Guid) && likedItemGuids.Contains(item.Guid))
                     {
                             starredItems.Add(item);
                         
                     }
                 }
-
-
                 if (starredItems.Any())
                 {
                     var starredRss = new RssModelClass
@@ -71,13 +61,9 @@ namespace CookiesOpml.Pages
             }
              
             RssListStarred = rssListStarred;
-            RssListGlobal = _rssListService.RssListGlobal;
             TotalItemCount = RssListStarred.Count();
             return Page();
         }
-
-
-
     }
 }
 

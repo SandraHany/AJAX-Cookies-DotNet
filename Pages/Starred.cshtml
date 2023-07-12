@@ -15,14 +15,6 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-    <script>
-        var rssListGlobal = @Html.Raw(Json.Serialize(Model.RssListGlobal));
-        if (rssListGlobal.length > 0) {
-            var firstItem = rssListGlobal[0];
-            console.log(firstItem.Text);
-        }
-    </script>
-
     @foreach (var rss in Model.RssListStarred)
     {
         @foreach (var item in rss.Items)

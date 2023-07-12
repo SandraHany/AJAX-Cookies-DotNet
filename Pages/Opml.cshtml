@@ -47,7 +47,7 @@
 </head>
 <body>
 
-    @foreach (var rss in Model.RssListGlobal)
+    @foreach (var rss in Model.RssList)
     {
         @foreach (var item in rss.Items)
         {
@@ -100,7 +100,7 @@
                 
                 try
                 {
-                    let itemNum = this.getAttribute("Guid").split("=")[1];
+                    let itemNum = this.getAttribute("Guid");
                     if(this.className.includes("liked"))
                     {
                         addCookie(itemNum);

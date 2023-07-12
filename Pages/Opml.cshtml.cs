@@ -18,14 +18,15 @@ namespace CookiesOpml.Pages
     public class OpmlModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly List<RssModelClass> _rssList = new List<RssModelClass>();
+        private static readonly List<RssModelClass> _rssList = new List<RssModelClass>();
         private readonly RssListService _rssListService;
         private readonly ILogger<OpmlModel> _logger;
-        private bool _isLoaded = false;
+        private static bool _isLoaded = false;
         public List<RssModelClass> RssList { get; set; } = new();
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 5;
-        public int TotalItemCount { get; set; }
+        public int TotalItemCount { get; set; } = 0;
+        private static int Counter { get; set; } = 0;
         public List<RssModelClass> RssListGlobal { get; set; } = new();
 
         public OpmlModel(IHttpClientFactory httpClientFactory, RssListService rssListService, ILogger<OpmlModel> logger)
@@ -39,22 +40,18 @@ namespace CookiesOpml.Pages
         { 
             PageNumber = Convert.ToInt32(Request.Query["page"]);
             _logger.LogInformation($"PageNumber: {PageNumber}, PageSize: {PageSize}");
-
             if (!_isLoaded)
             {
                 var client = _httpClientFactory.CreateClient();
                 using (client)
                 {
                     var response = await client.GetStringAsync("https://blue.feedland.org/opml?screenname=dave");
-
                     var doc = new XmlDocument();
                     doc.LoadXml(response);
                     var manager = new XmlNamespaceManager(doc.NameTable);
                     manager.AddNamespace("opml", "http://www.opml.org/spec2");
-
                     var outlineNodes = doc.SelectNodes("//outline[@xmlUrl]", manager).Cast<XmlNode>();
                     TotalItemCount = outlineNodes.Count();
-
                     foreach (var node in outlineNodes)
                     {
                         var modelObject = new RssModelClass();
@@ -72,11 +69,8 @@ namespace CookiesOpml.Pages
                 .Skip((PageNumber - 1) * PageSize)
                 .Take(PageSize)
                 .ToList();
-
-            foreach (var modelObject in _rssList)
+            foreach (var modelObject in filteredRssList)
             {
-                if (filteredRssList.Contains(modelObject))
-                {
                     if (!modelObject.Items.Any())
                     {
                         using (var client = _httpClientFactory.CreateClient())
@@ -84,22 +78,21 @@ namespace CookiesOpml.Pages
                             var feedResponse = await client.GetStringAsync(modelObject.XmlUrl);
                             var feedDoc = new XmlDocument();
                             feedDoc.LoadXml(feedResponse);
-
                             foreach (XmlNode itemNode in feedDoc.SelectNodes("/rss/channel/item"))
                             {
+                                Counter++;
                                 var item = new RssItem();
                                 item.Link = itemNode["link"]?.InnerText;
                                 item.Description = itemNode["description"]?.InnerText;
                                 item.PublishDate = DateTime.TryParse(itemNode["pubDate"]?.InnerText, out var publishDate) ? publishDate : DateTime.MinValue;
-                                item.Guid = itemNode["guid"]?.InnerText ?? "";
+                                item.Guid = Counter.ToString() ;
                                 modelObject.Items.Add(item);
                             }
                         }
                     }
-                }
+                
             }
-            _rssListService.RssListGlobal = _rssList;
-            RssListGlobal = _rssListService.RssListGlobal;
+            _rssListService.RssListGlobal.AddRange(filteredRssList);
             RssList = filteredRssList;
             string filePath = @".\Debug.txt";
             string likedCookie = Request.Cookies["liked"];
@@ -110,15 +103,11 @@ namespace CookiesOpml.Pages
             }
             if (likedItems != null)
             {
-
                 foreach (var rss in RssList)
                 {
                     foreach (var item in rss.Items)
                     {
-                        var uri = new Uri(item.Guid);
-                        var itemNumber = HttpUtility.ParseQueryString(uri.Query).Get("item");
-
-                        if (!string.IsNullOrEmpty(itemNumber) && likedItems.Contains(itemNumber))
+                        if (!string.IsNullOrEmpty(item.Guid) && likedItems.Contains(item.Guid))
                         {
                             item.IsStarred = true;
                         }
@@ -138,8 +127,6 @@ namespace CookiesOpml.Pages
                     }
                 }
             }
-
-
             return Page();
         }
 
