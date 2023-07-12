@@ -1,0 +1,73 @@
+﻿@page "{page?}"
+
+@model CookiesOpml.Pages.StarredModel
+@{
+    ViewData["Title"] = "Starred";
+  
+}
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Starred</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <script>
+        var rssListGlobal = @Html.Raw(Json.Serialize(Model.RssListGlobal));
+        if (rssListGlobal.length > 0) {
+            var firstItem = rssListGlobal[0];
+            console.log(firstItem.Text);
+        }
+    </script>
+
+    @foreach (var rss in Model.RssListStarred)
+    {
+        @foreach (var item in rss.Items)
+        {
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h4>
+                        @item.PublishDate
+                    </h4>
+                 </div>
+                <div class="card-body">
+                    @Html.Raw(item.Description)
+                    <br>
+                    <a href="@item.Link" class="btn btn-primary mt-2">Read more</a>
+                </div>
+            </div>
+        }
+    }
+    <div class="container" style="padding-bottom: 50px;">
+        @if (Model.TotalItemCount > Model.PageSize)
+        {
+            <nav>
+                <ul class="pagination">
+                    @if (Model.PageNumber > 1)
+                    {
+                        <li class="page-item"><a class="page-link" href="/Starred?page=@(Model.PageNumber - 1)">Previous</a></li>
+                    }
+                    @for (int i = 1; i <= Math.Ceiling((double)Model.TotalItemCount / Model.PageSize); i++)
+                    {
+                        <li class="page-item @(Model.PageNumber == i ? "active" : "")">
+                            <a class="page-link" href="/Starred?page=@i">@i</a>
+                        </li>
+                    }
+
+                    @if (Model.PageNumber < Math.Ceiling((double)Model.TotalItemCount / Model.PageSize))
+                    {
+                        <li class="page-item"><a class="page-link" href="/Starred?page=@(Model.PageNumber + 1)">Next</a></li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

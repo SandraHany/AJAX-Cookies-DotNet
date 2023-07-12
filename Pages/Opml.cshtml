@@ -1,0 +1,141 @@
+﻿@page "{page?}"
+@model CookiesOpml.Pages.OpmlModel
+@{
+    ViewData["Title"] = "Opml";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>RSS</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+
+        .like-button {
+            display: inline-block;
+            position: relative;
+            font-size: 18px;
+            cursor: pointer;
+            margin-left: 20px;
+            top: -10px;
+        }
+        .like-button::before {
+            font-size: 3em;
+            color: #000;
+            content: '♥';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .like-button::after {
+            font-size: 3em;
+            color: #ff3252;
+            content: '♥';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform 0.2s;
+        }
+        .like-button.liked::after {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+    </style>
+</head>
+<body>
+
+    @foreach (var rss in Model.RssListGlobal)
+    {
+        @foreach (var item in rss.Items)
+        {
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h4>
+                        @item.PublishDate<span><button class="like-button @(item.IsStarred ? "liked" : "")" Guid=@(item.Guid)></button></span>
+                    </h4>
+                 </div>
+                <div class="card-body">
+                    @Html.Raw(item.Description)
+                    <br>
+                    <a href="@item.Link" class="btn btn-primary mt-2">Read more</a>
+                </div>
+            </div>
+        }
+    }
+    <div class="container" style="padding-bottom: 50px;">
+        @if (Model.TotalItemCount > Model.PageSize)
+        {
+            <nav>
+                <ul class="pagination">
+                    @if (Model.PageNumber > 1)
+                    {
+                        <li class="page-item"><a class="page-link" href="/Opml?page=@(Model.PageNumber - 1)">Previous</a></li>
+                    }
+                    @for (int i = 1; i <= Math.Ceiling((double)Model.TotalItemCount / Model.PageSize); i++)
+                    {
+                        <li class="page-item @(Model.PageNumber == i ? "active" : "")">
+                            <a class="page-link" href="/Opml?page=@i">@i</a>
+                        </li>
+                    }
+
+                    @if (Model.PageNumber < Math.Ceiling((double)Model.TotalItemCount / Model.PageSize))
+                    {
+                        <li class="page-item"><a class="page-link" href="/Opml?page=@(Model.PageNumber + 1)">Next</a></li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        const likeButtons = document.querySelectorAll('.like-button');
+        likeButtons.forEach(button => {
+            button.addEventListener('click', function (event) {
+                button.classList.toggle('liked');
+                
+                try
+                {
+                    let itemNum = this.getAttribute("Guid").split("=")[1];
+                    if(this.className.includes("liked"))
+                    {
+                        addCookie(itemNum);
+                    }
+                    else
+                    {
+                        removeCookie(itemNum);
+                    }
+
+                    console.log(document.cookie);
+                }
+                catch(e)
+                {
+                    console.log(e);
+                }
+            });
+        });
+
+        function addCookie(itemNum)
+        {
+            if (document.cookie.length <= 6)
+                document.cookie = "liked=" + itemNum;
+            else if (!document.cookie.includes(itemNum))
+                document.cookie += "_" + itemNum;
+        }
+
+        function removeCookie(itemNum)
+        {
+            let idsArr = document.cookie.split("=")[1].split("_");
+            let idx = idsArr.indexOf(itemNum);
+            idsArr.splice(idx,1);       
+            document.cookie = "liked="+idsArr.join("_");
+        }
+
+
+    </script>
+</body>
+</html>
