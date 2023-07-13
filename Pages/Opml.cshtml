@@ -66,7 +66,7 @@
         }
     }
     <div class="container" style="padding-bottom: 50px;">
-        @if (Model.TotalItemCount > Model.PageSize)
+        @if (OpmlModel.TotalItemCount > Model.PageSize)
         {
             <nav>
                 <ul class="pagination">
@@ -74,14 +74,14 @@
                     {
                         <li class="page-item"><a class="page-link" href="/Opml?page=@(Model.PageNumber - 1)">Previous</a></li>
                     }
-                    @for (int i = 1; i <= Math.Ceiling((double)Model.TotalItemCount / Model.PageSize); i++)
+                    @for (int i = 1; i <= Math.Ceiling((double)OpmlModel.TotalItemCount / Model.PageSize); i++)
                     {
                         <li class="page-item @(Model.PageNumber == i ? "active" : "")">
                             <a class="page-link" href="/Opml?page=@i">@i</a>
                         </li>
                     }
 
-                    @if (Model.PageNumber < Math.Ceiling((double)Model.TotalItemCount / Model.PageSize))
+                    @if (Model.PageNumber < Math.Ceiling((double)OpmlModel.TotalItemCount / Model.PageSize))
                     {
                         <li class="page-item"><a class="page-link" href="/Opml?page=@(Model.PageNumber + 1)">Next</a></li>
                     }

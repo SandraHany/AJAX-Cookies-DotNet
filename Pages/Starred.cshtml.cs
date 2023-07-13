@@ -12,24 +12,19 @@ namespace CookiesOpml.Pages
     {
 
         private readonly RssListService _rssListService;
-
         public StarredModel(RssListService rssListService)
         {
             _rssListService = rssListService;
         }
-
-        //public List<OpmlModel.RssModelClass> RssList => _rssListService.RssListGlobal;
-
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 5;
-        public int TotalItemCount { get; set; }
+        public int TotalItemCount { get; set; } = 0;
         public List<RssModelClass> RssListStarred { get; set; } = new();
         public List<RssModelClass> RssListGlobal { get; set; } = new();
         public async Task<IActionResult> OnGetAsync(int? page)
         {
         
             var likedItemGuids = Request.Cookies["liked"]?.Split("_") ?? new string[0];
-
             string newItemGuid=null;
             string[] splitResult = null;
             var rssListStarred = new List<RssModelClass>();

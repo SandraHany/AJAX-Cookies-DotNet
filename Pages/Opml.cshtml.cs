@@ -12,6 +12,7 @@ using System.Web;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace CookiesOpml.Pages
 {
@@ -25,10 +26,10 @@ namespace CookiesOpml.Pages
         public List<RssModelClass> RssList { get; set; } = new();
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 5;
-        public int TotalItemCount { get; set; } = 0;
+        public static int TotalItemCount { get; set; } = 0;
         private static int Counter { get; set; } = 0;
         public List<RssModelClass> RssListGlobal { get; set; } = new();
-
+        public static List<int> PreviouslyLoadedPages { get; set; } = new();
         public OpmlModel(IHttpClientFactory httpClientFactory, RssListService rssListService, ILogger<OpmlModel> logger)
         {
             _httpClientFactory = httpClientFactory;
@@ -59,18 +60,19 @@ namespace CookiesOpml.Pages
                         modelObject.XmlUrl = node.Attributes["xmlUrl"].Value;
                         modelObject.HtmlUrl = node.Attributes["htmlUrl"]?.Value ?? "";
                         modelObject.Items = new List<RssItem>();
-                        _rssList.Add(modelObject);
+                        _rssListService.RssListGlobal.Add(modelObject);
                     }
                 }
 
                 _isLoaded = true;
             }
-            var filteredRssList = _rssList
-                .Skip((PageNumber - 1) * PageSize)
-                .Take(PageSize)
-                .ToList();
-            foreach (var modelObject in filteredRssList)
-            {
+            var filteredRssList = _rssListService.RssListGlobal
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+            if (!PreviouslyLoadedPages.Contains(PageNumber)){
+                foreach (var modelObject in filteredRssList)
+                {
                     if (!modelObject.Items.Any())
                     {
                         using (var client = _httpClientFactory.CreateClient())
@@ -85,15 +87,16 @@ namespace CookiesOpml.Pages
                                 item.Link = itemNode["link"]?.InnerText;
                                 item.Description = itemNode["description"]?.InnerText;
                                 item.PublishDate = DateTime.TryParse(itemNode["pubDate"]?.InnerText, out var publishDate) ? publishDate : DateTime.MinValue;
-                                item.Guid = Counter.ToString() ;
+                                item.Guid = Counter.ToString();
                                 modelObject.Items.Add(item);
                             }
                         }
                     }
-                
+
+                }
+                PreviouslyLoadedPages.Add(PageNumber);
             }
-            _rssListService.RssListGlobal.AddRange(filteredRssList);
-            RssList = filteredRssList;
+
             string filePath = @".\Debug.txt";
             string likedCookie = Request.Cookies["liked"];
             string[] likedItems = null;
@@ -103,7 +106,7 @@ namespace CookiesOpml.Pages
             }
             if (likedItems != null)
             {
-                foreach (var rss in RssList)
+                foreach (var rss in filteredRssList)
                 {
                     foreach (var item in rss.Items)
                     {
@@ -111,13 +114,38 @@ namespace CookiesOpml.Pages
                         {
                             item.IsStarred = true;
                         }
+                        else if (!string.IsNullOrEmpty(item.Guid) && !likedItems.Contains(item.Guid) && item.IsStarred)
+                        {
+                            item.IsStarred = false;
+                        }
                     }
                 }
             }
+            foreach (var rss in filteredRssList)
+            {
+                foreach (var item in rss.Items)
+                {
+                    var existingRssModel = _rssListService.RssListGlobal.FirstOrDefault(r => r.Items.Any(i => i.Guid == item.Guid));
+                    if (existingRssModel != null)
+                    {
+                        existingRssModel.Items.First(i => i.Guid == item.Guid).IsStarred = item.IsStarred;
+                    }
+                    else
+                    {
+                        _rssListService.RssListGlobal.Add(new RssModelClass
+                        {
+                            Text = rss.Text,
+                            XmlUrl = rss.XmlUrl,
+                            HtmlUrl = rss.HtmlUrl,
+                            Items = new List<RssItem> { item }
+                        });
+                    }
+                }
+            }
+            RssList = filteredRssList;
             string requestBody = await new StreamReader(Request.Body).ReadToEndAsync();
             using (StreamWriter outputFile = new StreamWriter(filePath))
             {
-
                 outputFile.WriteLine(likedCookie);
                 if (likedItems!=null)
                 {
@@ -141,7 +169,7 @@ namespace CookiesOpml.Pages
         public class RssItem
         {
             public string Link { get; set; }
-            public string Description { get; set; }
+            public string Description { get; set; } 
             public DateTime PublishDate { get; set; }
             public string Guid { get; set; }
             public bool IsStarred { get; set; }

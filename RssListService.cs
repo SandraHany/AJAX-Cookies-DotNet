@@ -9,6 +9,10 @@ namespace CookiesOpml
         {
             RssListGlobal = newList;
         }
+        public void LoadPage(int page)
+        {
+
+        }
 
     }
 }
