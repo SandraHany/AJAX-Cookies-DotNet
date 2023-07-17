@@ -1,4 +1,9 @@
-﻿using CookiesOpml.Pages;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
+using CookiesOpml.Pages;
 using static CookiesOpml.Pages.OpmlModel;
 namespace CookiesOpml
 {
@@ -12,6 +17,11 @@ namespace CookiesOpml
         public void LoadPage(int page)
         {
 
+        }
+        public void PrintListJson()
+        {
+            var jsonString = JsonSerializer.Serialize(RssListGlobal);
+            File.WriteAllText("output.json", jsonString);
         }
 
     }

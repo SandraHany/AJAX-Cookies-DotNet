@@ -1,0 +1,40 @@
+﻿@using CookiesOpml.Pages
+@if (Model.IsStarred)
+{
+    <button class="like-button liked" data-guid="@Model.Guid"></button>
+}
+else
+{
+    <button class="like-button" data-guid="@Model.Guid"></button>
+}
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script>
+    $(function () {
+        const likeButton = $(".like-button");
+        likeButton.on('click', function () {
+            const itemGuid = $(this).data('guid');
+            const isStarred = $(this).hasClass('liked');
+            const url = '/Starred?handler=ToggleStarred';
+            console.log(isStarred);
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: { guid: itemGuid, isStarred: isStarred },
+                headers: {
+                    "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function (data) {
+                    console.log(data);
+                    if (!data.isStarred) {
+                        likeButton.filter("[data-guid='" + itemGuid + "']").closest('.card').remove();
+                    } else {         
+                        likeButton.filter("[data-guid='" + itemGuid + "']").toggleClass('liked', data.isStarred);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error(error);
+                }
+            });
+        });
+    });
+</script>
